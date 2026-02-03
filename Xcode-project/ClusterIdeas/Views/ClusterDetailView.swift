@@ -147,21 +147,10 @@ struct ClusterDetailView: View {
             }
         }
         .sheet(isPresented: $showingCreateItem) {
-            NavigationStack {
-                Text("Item details - to be implemented")
-                    .navigationTitle("New Item")
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Done") {
-                                showingCreateItem = false
-                            }
-                        }
-                    }
-            }
+            ItemFormView(cluster: cluster, existingItem: nil)
         }
-        .navigationDestination(for: Item.self) { _ in
-            Text("Item details - to be implemented")
-                .navigationTitle("Item")
+        .navigationDestination(for: Item.self) { item in
+            ItemDetailView(item: item)
         }
     }
 
