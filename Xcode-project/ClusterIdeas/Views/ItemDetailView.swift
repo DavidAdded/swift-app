@@ -81,6 +81,8 @@ struct ItemDetailView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             ItemFormView(cluster: item.cluster, existingItem: item)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .alert("Delete Item?", isPresented: $showingDeleteAlert) {
             Button("Delete", role: .destructive) {

@@ -35,6 +35,12 @@ struct ClusterDetailView: View {
             Section("Cluster Info") {
                 if isEditing {
                     TextField("Cluster Name", text: $editableClusterName)
+
+                    if trimmedClusterName.isEmpty {
+                        Text("Name cannot be empty")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 } else {
                     Text(cluster.name)
                         .font(.title2)
@@ -52,7 +58,19 @@ struct ClusterDetailView: View {
             Section("Field Definitions") {
                 if isEditing {
                     ForEach($editableFieldDefinitions) { $field in
-                        TextField("Field name", text: $field.name)
+                        HStack {
+                            TextField("Field name", text: $field.name)
+
+                            if field.trimmedName.isEmpty {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundStyle(.red)
+                                    .accessibilityLabel("Field name cannot be empty")
+                            }
+                        }
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(field.trimmedName.isEmpty ? Color.red : Color.clear, lineWidth: 1)
+                        )
                     }
                     .onMove(perform: moveFieldDefinitions)
                     .onDelete(perform: deleteFieldDefinitions)
@@ -64,6 +82,7 @@ struct ClusterDetailView: View {
                         }
                         .disabled(newFieldName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
+                    .transition(.move(edge: .trailing))
                 } else {
                     ForEach(sortedFieldDefinitions) { field in
                         HStack {
@@ -77,11 +96,13 @@ struct ClusterDetailView: View {
 
             Section {
                 if sortedItems.isEmpty {
-                    ContentUnavailableView(
-                        "No Items",
-                        systemImage: "tray",
-                        description: Text("Add your first item to this cluster")
-                    ) {
+                    VStack(spacing: 12) {
+                        ContentUnavailableView(
+                            "No Items",
+                            systemImage: "tray",
+                            description: Text("Add your first item to this cluster")
+                        )
+
                         Button("Add Item") {
                             showingCreateItem = true
                         }
@@ -114,6 +135,7 @@ struct ClusterDetailView: View {
         }
         .navigationTitle(cluster.name)
         .environment(\.editMode, $editMode)
+        .animation(.default, value: isEditing)
         .toolbar {
             if isEditing {
                 ToolbarItem(placement: .topBarLeading) {
@@ -126,6 +148,7 @@ struct ClusterDetailView: View {
                         saveChanges()
                     }
                     .disabled(isDoneDisabled)
+                    .help(isDoneDisabled ? "Fix validation errors to enable saving." : "")
                 }
             } else {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -155,39 +178,43 @@ struct ClusterDetailView: View {
     }
 
     private func startEditing() {
-        editableClusterName = cluster.name
-        editableFieldDefinitions = cluster.fieldDefinitions
-            .sorted { $0.order < $1.order }
-            .map { field in
-                EditableFieldDefinition(
-                    id: field.id,
-                    existingId: field.id,
-                    name: field.fieldName,
-                    order: field.order,
-                    originalName: field.fieldName
-                )
-            }
-        isEditing = true
-        editMode = .active
+        withAnimation {
+            editableClusterName = cluster.name
+            editableFieldDefinitions = cluster.fieldDefinitions
+                .sorted { $0.order < $1.order }
+                .map { field in
+                    EditableFieldDefinition(
+                        id: field.id,
+                        existingId: field.id,
+                        name: field.fieldName,
+                        order: field.order,
+                        originalName: field.fieldName
+                    )
+                }
+            isEditing = true
+            editMode = .active
+        }
     }
 
     private func cancelEditing() {
-        editableClusterName = cluster.name
-        editableFieldDefinitions = cluster.fieldDefinitions
-            .sorted { $0.order < $1.order }
-            .map { field in
-                EditableFieldDefinition(
-                    id: field.id,
-                    existingId: field.id,
-                    name: field.fieldName,
-                    order: field.order,
-                    originalName: field.fieldName
-                )
-            }
-        newFieldName = ""
-        pendingFieldDeletion = nil
-        isEditing = false
-        editMode = .inactive
+        withAnimation {
+            editableClusterName = cluster.name
+            editableFieldDefinitions = cluster.fieldDefinitions
+                .sorted { $0.order < $1.order }
+                .map { field in
+                    EditableFieldDefinition(
+                        id: field.id,
+                        existingId: field.id,
+                        name: field.fieldName,
+                        order: field.order,
+                        originalName: field.fieldName
+                    )
+                }
+            newFieldName = ""
+            pendingFieldDeletion = nil
+            isEditing = false
+            editMode = .inactive
+        }
     }
 
     private func saveChanges() {

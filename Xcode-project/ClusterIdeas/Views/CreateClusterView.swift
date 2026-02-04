@@ -7,6 +7,12 @@ struct CreateClusterView: View {
 
     @State private var clusterName = ""
     @State private var fieldDefinitions: [String] = [""]
+    @State private var attemptedSave = false
+    @FocusState private var focusedField: FocusField?
+
+    private enum FocusField: Hashable {
+        case clusterName
+    }
 
     private var trimmedClusterName: String {
         clusterName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -27,12 +33,23 @@ struct CreateClusterView: View {
             Form {
                 Section("Cluster Details") {
                     TextField("Cluster Name", text: $clusterName)
+                        .textInputAutocapitalization(.words)
+                        .submitLabel(.next)
+                        .focused($focusedField, equals: .clusterName)
+
+                    if (attemptedSave || focusedField != .clusterName) && trimmedClusterName.isEmpty {
+                        Text("Cluster name is required")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
 
                 Section("Field Definitions") {
                     ForEach(fieldDefinitions.indices, id: \.self) { index in
                         HStack {
                             TextField("Field name", text: $fieldDefinitions[index])
+                                .textInputAutocapitalization(.words)
+                                .submitLabel(.next)
 
                             if fieldDefinitions.count > 1 {
                                 Button {
@@ -50,6 +67,12 @@ struct CreateClusterView: View {
                     Button("Add Field") {
                         fieldDefinitions.append("")
                     }
+
+                    if attemptedSave && trimmedFieldDefinitions.isEmpty {
+                        Text("At least one field is required")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
             }
             .navigationTitle("New Cluster")
@@ -62,7 +85,10 @@ struct CreateClusterView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        saveCluster()
+                        attemptedSave = true
+                        if !isSaveDisabled {
+                            saveCluster()
+                        }
                     }
                     .disabled(isSaveDisabled)
                 }

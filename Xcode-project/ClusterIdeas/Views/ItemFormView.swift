@@ -10,6 +10,7 @@ struct ItemFormView: View {
 
     @State private var fieldValues: [String: String] = [:]
     @State private var isSaving = false
+    @State private var attemptedSave = false
 
     private var sortedFieldDefinitions: [FieldDefinition] {
         cluster.fieldDefinitions.sorted { $0.order < $1.order }
@@ -25,7 +26,15 @@ struct ItemFormView: View {
                 Section("Item Details") {
                     ForEach(sortedFieldDefinitions) { field in
                         TextField(field.fieldName, text: binding(for: field.fieldName))
+                            .textInputAutocapitalization(.sentences)
+                            .submitLabel(.done)
                     }
+                }
+
+                if attemptedSave && !isValid {
+                    Text("At least one field must have a value")
+                        .font(.caption)
+                        .foregroundStyle(.red)
                 }
 
                 if let existingItem {
@@ -46,7 +55,10 @@ struct ItemFormView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        saveItem()
+                        attemptedSave = true
+                        if isValid {
+                            saveItem()
+                        }
                     }
                     .disabled(!isValid || isSaving)
                 }
@@ -62,6 +74,7 @@ struct ItemFormView: View {
                     }
                 }
             }
+            .animation(.default, value: sortedFieldDefinitions.count)
         }
     }
 
